@@ -1,9 +1,10 @@
 from rest_framework import generics
 from rest_framework.decorators import api_view
+from rest_framework import status
 from rest_framework.response import Response
-from django.core.exceptions import ObjectDoesNotExist
-from .serializers import PortSerializer, CartItemSerializer
-from .models import Portfolio, CartItem, Cart
+#from django.core.exceptions import ObjectDoesNotExist
+from .serializers import PortSerializer, CategorySerializer, SubcategorySerializer
+from .models import Portfolio, Category, Subcategory
 
 #def get_port(request):
  #   portfolios = Portfolio.objects.all()
@@ -19,12 +20,51 @@ from .models import Portfolio, CartItem, Cart
 
 # Create your views here.
 
+
+
+
+
+@api_view(('GET',))
+def category_list(request):
+    categories = Category.objects.all()
+    serializer = CategorySerializer(categories, many=True)
+    return Response(serializer.data)
+
+
+@api_view(('GET',))
+def subcategory_list(request, category_id):
+    try:
+        category = Category.objects.get(id=category_id)
+        subcategories = Subcategory.objects.filter(category=category)
+        serializer = SubcategorySerializer(subcategories, many=True)
+        data = {'category': CategorySerializer(category).data, 'subcategories': serializer.data}
+        return Response(data)
+    except Category.DoesNotExist:
+        return Response({'error': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(('GET',))
+def fooditem_list(request, subcategory_id):
+    try:
+        subcategory = Subcategory.objects.get(id=subcategory_id)
+        fooditems = Portfolio.objects.filter(subcategory=subcategory)
+        serializer = PortSerializer(fooditems, many=True)
+        data = {'subcategory': SubcategorySerializer(subcategory).data, 'fooditems': serializer.data}
+        return Response(data)
+    except Subcategory.DoesNotExist:
+        return Response({'error': 'Subcategory not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
 class PortList(generics.ListAPIView):
 
-    queryset = Portfolio.objects.all()
-    serializer_class = PortSerializer
+   queryset = Portfolio.objects.all()
+   serializer_class = PortSerializer
 
-@api_view(['POST'])
+
+
+
+""" @api_view(['POST'])
 def add_to_cart(request, product_id):
     try:
         product = Portfolio.objects.get(pk=product_id)
@@ -54,6 +94,6 @@ def get_cart_items(request):
             return Response({'message': 'Cart is empty.'})
     else:
         return Response({'message': 'Cart is empty.'})
-
+"""
 
 
